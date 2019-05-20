@@ -1,7 +1,7 @@
 import discord
 import json
 import os
-from asyncio import iscoroutinefunction as is_a_coroutine
+from asyncio import iscoroutinefunction as asyncio_iscoroutine
 
 # set the working directory to this file's directory
 # this makes loading files a lot easier
@@ -27,28 +27,90 @@ class DB:
         with open(self.path, "w") as f:
             json.dump(self._data, f)
 
+    def get(self, key: str, default=None):
+        try:
+            return self._data[key]
+        except KeyError:
+            return default
+
+    # use this if lookups are likely to miss
+    def get2(self, key: str, default=None):
+        if key in self._data:
+            return self._data[key]
+        return default
+
     def __setitem__(self, key: str, value):
         self._data[key] = value
 
     def __getitem__(self, key: str):
-        try:
-            return self._data[key]
-        except KeyError:
-            return None
+        return self.get(key)
 
 class Bot(discord.Client):
+    def __init__(self, *args, **kwargs):
+        # pass along any supplied arguments
+        super().__init__(*args, **kwargs)
+
+        # dict for invoking commands
+        self._commands = {}
+        # a dict holding all bot data
+        self.data = DB()
+        self.data.load()
+
+    def command(self, coroutine):
+        # this is a decorator for commands.
+
+        # all coroutines should accept:
+        # - a discord.Message parameter
+        # - the arguments passed to the command (as *args)
+        # this will be enforced later; it's 1 AM right now
+        # and i dont feel like sorting it out :P
+        if not asyncio_iscoroutine(coroutine):
+            raise Exception("Command function is not a coroutine")
+
+        self._commands[coroutine.__name__] = coroutine
+        return coroutine
+
+    def parse_message(self, prefix: str, message: discord.Message):
+        # ignore bot's own messages
+        if message.author == self.user:
+            return None, None
+
+        # NOTE: system_content keeps discord's formatting in tact
+        # this could become confusing so im just making it clear
+        pre = message.system_content.split(prefix, 1)
+
+        # if there's content to the left (of the prefix)
+        # or no content to the right, return None
+        if pre[0] or not pre[1]:
+            return None, None
+
+        # split all tokens, including the command
+        command_args = pre[1].split()
+
+        try:
+            # return the command and the rest of the tokens (args)
+            return self._commands[command_args[0]], command_args[1:]
+        except KeyError:
+            # command was not found
+            return None, None
+
     async def on_message(self, message: discord.Message):
-        # do nothing for now
-        pass
+        # for now, assume that "prefix" is likely not set, and default to "."
+        command, args = self.parse_message(self.data.get2("prefix", "."), message)
+        if command:
+            await command(message, *args)
 
-# initialize the bot and "database" hAhAhaHaHaH
-bot, commands, db = Bot(), DB()
+# initialize the bot
+bot = Bot()
 
-# commands go here
-# there will be a decorator for registering them (@bot.command)
+####################
+# commands go here #
+####################
 
-# load from the "database" file
-db.load()
+@bot.command
+async def test(message: discord.Message, *args):
+    await message.channel.send("Testing!")
 
+# NOTE: this must always be the last line of the file, since it is a blocking operation
 # run the bot
 bot.run(token)
