@@ -1,7 +1,8 @@
-import discord
+import asyncio
 import json
 import os
-from asyncio import iscoroutinefunction as asyncio_iscoroutine
+
+import discord
 
 # set the working directory to this file's directory
 # this makes loading files a lot easier
@@ -64,7 +65,7 @@ class Bot(discord.Client):
         # - the arguments passed to the command (as *args)
         # this will be enforced later; it's 1 AM right now
         # and i dont feel like sorting it out :P
-        if not asyncio_iscoroutine(coroutine):
+        if not asyncio.iscoroutinefunction(coroutine):
             raise Exception("Command function is not a coroutine")
 
         self._commands[coroutine.__name__] = coroutine
@@ -110,6 +111,14 @@ bot = Bot()
 @bot.command
 async def test(message: discord.Message, *args):
     await message.channel.send("Testing!")
+
+@bot.command
+async def rem(message: discord.Message, *args):
+    if len(args) < 1 or not args[0].isdigit():
+        return await message.channel.send("Usage: `rem seconds (text)")
+    sent: discord.Message = await message.channel.send(":zzz:")
+    await asyncio.sleep(int(args[0]))
+    await sent.edit(content=f'{message.author.mention}\n:alarm_clock: {" ".join(args[1:])}')
 
 # NOTE: this must always be the last line of the file, since it is a blocking operation
 # run the bot
