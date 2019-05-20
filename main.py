@@ -115,7 +115,7 @@ async def test(message: discord.Message, *args):
 @bot.command
 async def rem(message: discord.Message, *args):
     if len(args) < 1 or not args[0].isdigit():
-        return await message.channel.send("Usage: `rem seconds (text)")
+        return await message.channel.send("Usage: `rem seconds (text)`")
     sent: discord.Message = await message.channel.send(":zzz:")
     await asyncio.sleep(int(args[0]))
     await sent.edit(content=f'{message.author.mention}\n:alarm_clock: {" ".join(args[1:])}')
