@@ -32,12 +32,16 @@ class DB:
         try:
             return self._data[key]
         except KeyError:
+            if default is not None:
+                self._data[key] = default
             return default
 
     # use this if lookups are likely to miss
     def get2(self, key: str, default=None):
         if key in self._data:
             return self._data[key]
+        if default is not None:
+            self._data[key] = default
         return default
 
     def __setitem__(self, key: str, value):
