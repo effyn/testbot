@@ -17,7 +17,7 @@ class DB:
         self.path = path
         self._data: dict = None
 
-    def load(self) -> dict:
+    def load(self):
         try:
             with open(self.path) as f:
                 self._data = json.load(f)
