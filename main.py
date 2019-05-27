@@ -9,7 +9,7 @@ import discord
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 with open("token.txt") as f:
-    token = f.read()
+    token = f.read().strip()
 
 class DB:
     # change the path if you want to, defaults to data.json
